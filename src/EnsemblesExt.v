@@ -8,6 +8,7 @@ Require Import
 Require Coq.Sets.Finite_sets_facts.
 Require Coq.Sets.Powerset_facts.
 Require Coq.Logic.Classical_Prop.
+Require Classical_Pred_Type.
 
 Generalizable All Variables.
 
@@ -61,7 +62,7 @@ Notation "p ∈ q" := (In _ q p)       (at level 88, no associativity).
 Notation "p ⊆ q" := (Included _ p q) (at level 89, no associativity).
 Infix    "∩"     := (Intersection _) (at level 80, right associativity).
 
-Program Instance Same_set_Equivalence {A} : Equivalence (@Same_set A).
+(*#[export]*) Program Instance Same_set_Equivalence {A} : Equivalence (@Same_set A).
 Next Obligation.
   intro x.
   constructor; intros y H; exact H.
@@ -91,7 +92,7 @@ Add Parametric Relation {A : Type} : (Ensemble A) (Same_set A)
   transitivity proved by (@Equivalence_Transitive _ _ Same_set_Equivalence)
   as Same_set_relation.
 
-Program Instance Same_set_equiv A :
+(*#[export]*) Program Instance Same_set_equiv A :
   Proper (Same_set A ==> Same_set A ==> Basics.impl) (Same_set A).
 Next Obligation.
   repeat intro.
@@ -101,7 +102,7 @@ Next Obligation.
   apply H, H4, H3, H5.
 Qed.
 
-Program Instance Same_set_equiv' A :
+(*#[export]*) Program Instance Same_set_equiv' A :
   Proper (Same_set A ==> Same_set A ==> Basics.flip Basics.impl) (Same_set A).
 Next Obligation.
   repeat intro.
@@ -111,18 +112,18 @@ Next Obligation.
   apply H2, H4, H0, H5.
 Qed.
 
-Program Instance Singleton_Same_set A :
+(*#[export]*) Program Instance Singleton_Same_set A :
   Proper (eq ==> Same_set A) (Singleton A).
 Next Obligation. intros; reflexivity. Qed.
 
-Program Instance In_Same_set A :
+(*#[export]*) Program Instance In_Same_set A :
   Proper (Same_set A ==> Same_set A) (In A).
 Next Obligation.
   repeat intro.
   exact H.
 Qed.
 
-Program Instance In_Same_set_eq A :
+(*#[export]*) Program Instance In_Same_set_eq A :
   Proper (Same_set A ==> eq ==> Basics.impl) (In A).
 Next Obligation.
   repeat intro; subst.
@@ -130,7 +131,7 @@ Next Obligation.
   now apply H.
 Qed.
 
-Program Instance In_Same_set_eq' A :
+(*#[export]*) Program Instance In_Same_set_eq' A :
   Proper (Same_set A ==> eq ==> Basics.flip Basics.impl) (In A).
 Next Obligation.
   repeat intro; subst.
@@ -138,7 +139,7 @@ Next Obligation.
   now apply H0.
 Qed.
 
-Program Instance In_Same_set_eq'' A :
+(*#[export]*) Program Instance In_Same_set_eq'' A :
   Proper (Same_set A --> eq ==> Basics.impl) (In A).
 Next Obligation.
   repeat intro; subst.
@@ -146,7 +147,7 @@ Next Obligation.
   now apply H0.
 Qed.
 
-Program Instance In_Same_set_eq''' A :
+(*#[export]*) Program Instance In_Same_set_eq''' A :
   Proper (Same_set A --> eq ==> Basics.flip Basics.impl) (In A).
 Next Obligation.
   repeat intro; subst.
@@ -154,7 +155,7 @@ Next Obligation.
   now apply H.
 Qed.
 
-Program Instance Union_Same_set A :
+(*#[export]*) Program Instance Union_Same_set A :
   Proper (Same_set A ==> Same_set A ==> Same_set A) (Union A).
 Next Obligation.
   repeat intro.
@@ -171,7 +172,7 @@ Next Obligation.
     apply H2, H4.
 Qed.
 
-Program Instance Add_Same_set A :
+(*#[export]*) Program Instance Add_Same_set A :
   Proper (Same_set A ==> eq ==> Same_set A) (Add A).
 Next Obligation.
   unfold Add; repeat intro.
@@ -180,7 +181,7 @@ Next Obligation.
   reflexivity.
 Qed.
 
-Program Instance Setminus_Same_set A :
+(*#[export]*) Program Instance Setminus_Same_set A :
   Proper (Same_set A ==> Same_set A ==> Same_set A) (Setminus A).
 Next Obligation.
   repeat intro.
@@ -199,7 +200,7 @@ Next Obligation.
   apply H0, H3.
 Qed.
 
-Program Instance Subtract_Same_set A :
+(*#[export]*) Program Instance Subtract_Same_set A :
   Proper (Same_set A ==> eq ==> Same_set A) (Subtract A).
 Next Obligation.
   unfold Subtract; repeat intro.
@@ -208,7 +209,7 @@ Next Obligation.
   reflexivity.
 Qed.
 
-Program Instance Included_Same_set A :
+(*#[export]*) Program Instance Included_Same_set A :
   Proper (Same_set A ==> Same_set A ==> Basics.impl) (Included A).
 Next Obligation.
   unfold Included; repeat intro.
@@ -217,11 +218,11 @@ Next Obligation.
   exact (H1 _ H2).
 Qed.
 
-Program Instance Included_Same_set_subrelation A :
+(*#[export]*) Program Instance Included_Same_set_subrelation A :
   subrelation (@Same_set A) (@Included A).
 Next Obligation. repeat intro; now apply H. Qed.
 
-Program Instance Finite_Proper A :
+(*#[export]*) Program Instance Finite_Proper A :
   Proper (Same_set A ==> impl) (Finite A).
 Next Obligation.
   intros ????.
@@ -231,7 +232,7 @@ Next Obligation.
   assumption.
 Qed.
 
-Program Instance Finite_Proper_flip A :
+(*#[export]*) Program Instance Finite_Proper_flip A :
   Proper (Same_set A --> flip impl) (Finite A).
 Next Obligation.
   intros ????.
@@ -356,19 +357,19 @@ Section TupleEnsemble.
 
 Variables A B : Type.
 
-Definition EMap := Ensemble (A * B).
+Definition Map := Ensemble (A * B).
 
-Definition Empty : EMap := Empty_set _.
+Definition Empty : Map := Empty_set _.
 
-Definition Single (a : A) (b : B) : EMap := Singleton _ (a, b).
+Definition Single (a : A) (b : B) : Map := Singleton _ (a, b).
 
-Definition Lookup (a : A) (b : B) (r : EMap) := In _ r (a, b).
+Definition Lookup (a : A) (b : B) (r : Map) := In _ r (a, b).
 
-Definition Functional (r : EMap) :=
+Definition Functional (r : Map) :=
   forall addr blk1, Lookup addr blk1 r ->
   forall blk2, Lookup addr blk2 r -> blk1 = blk2.
 
-Definition Same (x y : EMap) : Prop :=
+Definition Same (x y : Map) : Prop :=
   forall a b, Lookup a b x <-> Lookup a b y.
 
 Global Program Instance Same_Equivalence : Equivalence Same.
@@ -404,36 +405,36 @@ Global Program Instance Lookup_Proper_flip :
   Proper (eq ==> eq ==> Same --> Basics.impl) Lookup.
 Next Obligation. repeat intro; subst; now apply H1. Qed.
 
-Definition Member (a : A) (r : EMap) := exists b, Lookup a b r.
+Definition Member (a : A) (r : Map) := exists b, Lookup a b r.
 
-Definition Member_dec (a : A) (r : EMap) : Member a r \/ ~ Member a r.
+Definition Member_dec (a : A) (r : Map) : Member a r \/ ~ Member a r.
 Proof.
   unfold Member.
   elim (Classical_Prop.classic (exists b, Lookup a b r));
   intuition.
 Qed.
 
-Definition Insert (a : A) (b : B) (r : EMap)
-           (H : forall b' : B, ~ Lookup a b' r) : EMap :=
+Definition Insert (a : A) (b : B) (r : Map)
+           (H : forall b' : B, ~ Lookup a b' r) : Map :=
   Add _ r (a, b).
 
-Definition Remove (a : A) (r : EMap) : EMap :=
+Definition Remove (a : A) (r : Map) : Map :=
   Setminus _ r (fun p => fst p = a).
 
-Program Definition Update (a : A) (b : B) (r : EMap) :
-  EMap := Insert a b (Remove a r) _.
+Program Definition Update (a : A) (b : B) (r : Map) :
+  Map := Insert a b (Remove a r) _.
 Next Obligation. firstorder. Qed.
 
-Definition Map {C} (f : A -> B -> C) (r : EMap) : Ensemble (A * C) :=
+Definition Map_value {C} (f : A -> B -> C) (r : Map) : Ensemble (A * C) :=
   fun p => exists b : B, Lookup (fst p) b r /\ snd p = f (fst p) b.
 
-Definition Relate {C D} (f : A -> B -> C -> D -> Prop) (r : EMap) :
+Definition Relate {C D} (f : A -> B -> C -> D -> Prop) (r : Map) :
   Ensemble (C * D) :=
   fun p => exists k' e', Lookup k' e' r /\ f k' e' (fst p) (snd p).
 
-Lemma Map_left_identity : forall r, Same r (Map (fun _ x => x) r).
+Lemma Map_value_left_identity : forall r, Same r (Map_value (fun _ x => x) r).
 Proof.
-  unfold Map; split; intros.
+  unfold Map_value; split; intros.
     eexists b.
     intuition.
   do 2 destruct H.
@@ -442,9 +443,9 @@ Proof.
   assumption.
 Qed.
 
-Lemma Map_right_identity : forall r, Same (Map (fun _ x => x) r) r.
+Lemma Map_value_right_identity : forall r, Same (Map_value (fun _ x => x) r) r.
 Proof.
-  unfold Map; split; intros.
+  unfold Map_value; split; intros.
     do 2 destruct H.
     simpl in *.
     rewrite H0.
@@ -453,10 +454,10 @@ Proof.
   intuition.
 Qed.
 
-Lemma Map_composition : forall f g r,
-  Same (Map (fun k e => f k (g k e)) r) (Map f (Map g r)).
+Lemma Map_value_composition : forall f g r,
+  Same (Map_value (fun k e => f k (g k e)) r) (Map_value f (Map_value g r)).
 Proof.
-  unfold Map; split; intros.
+  unfold Map_value; split; intros.
     destruct H.
     destruct H; simpl in *.
     subst.
@@ -475,28 +476,28 @@ Proof.
   reflexivity.
 Qed.
 
-Definition Move (a a' : A) (r : EMap) : EMap :=
+Definition Move (a a' : A) (r : Map) : Map :=
   Relate (fun k e k' e' =>
             e = e' /\ ((k' = a' /\ k = a) \/ (k' <> a /\ k = k'))) r.
 
-Definition Filter (P : A -> B -> Prop) (r : EMap) :
-  EMap :=
+Definition Filter (P : A -> B -> Prop) (r : Map) :
+  Map :=
   fun p => Lookup (fst p) (snd p) r /\ P (fst p) (snd p).
 
-Definition Define (P : A -> Prop) (b : B) (r : EMap) :
-  EMap :=
+Definition Define (P : A -> Prop) (b : B) (r : Map) :
+  Map :=
   Ensembles.Union
     _ (fun p => P (fst p) /\ In _ (Singleton _ b) (snd p))
       (Filter (fun k _ => ~ P k) r).
 
-Definition Modify (a : A) (f : B -> B) (r : EMap) :
-  EMap :=
+Definition Modify (a : A) (f : B -> B) (r : Map) :
+  Map :=
   Relate (fun k e k' e' => k = k' /\ IF k' = a then e' = f e else e' = e) r.
 
-Definition All (P : A -> B -> Prop) (r : EMap) : Prop :=
+Definition All (P : A -> B -> Prop) (r : Map) : Prop :=
   forall a b, Lookup a b r -> P a b.
 
-Definition Any (P : A -> B -> Prop) (r : EMap) : Prop :=
+Definition Any (P : A -> B -> Prop) (r : Map) : Prop :=
   exists a b, Lookup a b r /\ P a b.
 
 Lemma Lookup_Empty : forall a b, ~ Lookup a b Empty.
@@ -632,12 +633,12 @@ Proof.
   firstorder.
 Qed.
 
-Lemma Lookup_Map : forall a b f r,
-  (exists b', f a b' = b /\ Lookup a b' r) -> Lookup a b (Map f r).
+Lemma Lookup_Map_value : forall a b f r,
+  (exists b', f a b' = b /\ Lookup a b' r) -> Lookup a b (Map_value f r).
 Proof. firstorder. Qed.
 
-Lemma Lookup_Map_inv : forall a b f r,
-  Lookup a b (Map f r) -> exists b', f a b' = b /\ Lookup a b' r.
+Lemma Lookup_Map_value_inv : forall a b f r,
+  Lookup a b (Map_value f r) -> exists b', f a b' = b /\ Lookup a b' r.
 Proof.
   intros.
   inversion H; clear H.
@@ -767,8 +768,7 @@ Proof.
   unfold not; intros.
   subst.
   unfold Member in H0.
-  Require Import Classical_Pred_Type.
-  apply not_ex_all_not with (n:=b) in H0.
+  apply Classical_Pred_Type.not_ex_all_not with (n:=b) in H0.
   contradiction.
 Qed.
 
@@ -803,7 +803,7 @@ Arguments Update : default implicits.
 Arguments Modify : default implicits.
 Arguments Move : default implicits.
 Arguments Filter : default implicits.
-Arguments Map : default implicits.
+Arguments Map_value : default implicits.
 Arguments Relate : default implicits.
 Arguments All : default implicits.
 Arguments Any : default implicits.
@@ -823,11 +823,11 @@ Ltac t H :=
   simpl in *; subst;
   firstorder.
 
-Lemma Relate_left_identity : forall A B (r : EMap A B),
+Lemma Relate_left_identity : forall A B (r : Map A B),
   Same r (Relate (fun k x k' x' => k = k' /\ x = x') r).
 Proof. t H. Qed.
 
-Lemma Relate_right_identity : forall A B (r : EMap A B),
+Lemma Relate_right_identity : forall A B (r : Map A B),
   Same (Relate (fun k x k' x' => k = k' /\ x = x') r) r.
 Proof. t H. Qed.
 
@@ -847,7 +847,7 @@ Ltac teardown :=
   | [ H : Lookup _ _ (Remove _ _)     |- _ ] => apply Lookup_Remove_inv in H
   | [ H : Lookup _ _ (Update _ _ _)   |- _ ] => apply Lookup_Update_inv in H
   | [ H : Lookup _ _ (Move _ _ _)     |- _ ] => apply Lookup_Move_inv in H
-  | [ H : Lookup _ _ (Map _ _)        |- _ ] => apply Lookup_Map_inv in H
+  | [ H : Lookup _ _ (Map_value _ _)  |- _ ] => apply Lookup_Map_value_inv in H
   | [ H : Lookup _ _ (Map_set _ _)    |- _ ] => apply Lookup_Map_set_inv in H
   | [ H : Lookup _ _ (Relate _ _)     |- _ ] => apply Lookup_Relate_inv in H
   | [ H : Lookup _ _ (Filter _ _)     |- _ ] => apply Lookup_Filter_inv in H
@@ -861,7 +861,7 @@ Ltac teardown :=
   | [ H : Member _ (Remove _ _)     |- _ ] => unfold Member in H
   | [ H : Member _ (Update _ _ _)   |- _ ] => unfold Member in H
   | [ H : Member _ (Move _ _ _)     |- _ ] => unfold Member in H
-  | [ H : Member _ (Map _ _)        |- _ ] => unfold Member in H
+  | [ H : Member _ (Map_value _ _)  |- _ ] => unfold Member in H
   | [ H : Member _ (Map_set _ _)    |- _ ] => unfold Member in H
   | [ H : Member _ (Relate _ _)     |- _ ] => unfold Member in H
   | [ H : Member _ (Filter _ _)     |- _ ] => unfold Member in H
@@ -879,7 +879,7 @@ Ltac teardown :=
   | [ |- Lookup _ _ (Update _ _ _)   ] => apply Lookup_Update_eq ||
                                           apply Lookup_Update
   | [ |- Lookup _ _ (Move _ _ _)     ] => apply Lookup_Move
-  | [ |- Lookup _ _ (Map _ _)        ] => apply Lookup_Map
+  | [ |- Lookup _ _ (Map_value _ _)  ] => apply Lookup_Map_value
   | [ |- Lookup _ _ (Map_set _ _)    ] => apply Lookup_Map_set
   | [ |- Lookup _ _ (Relate _ _)     ] => apply Lookup_Relate
   | [ |- Lookup _ _ (Filter _ _)     ] => apply Lookup_Filter
@@ -936,9 +936,9 @@ Next Obligation.
   rewrite H0; assumption.
 Qed.
 
-Global Program Instance Map_Proper A B :
+Global Program Instance Map_value_Proper A B :
   Proper (pointwise_relation _ (pointwise_relation _ eq)
-            ==> @Same _ _ ==> @Same _ _) (@Map A B B).
+            ==> @Same _ _ ==> @Same _ _) (@Map_value A B B).
 Next Obligation.
   unfold pointwise_relation.
   split; repeat intro; subst; repeat teardown;
@@ -950,13 +950,13 @@ Next Obligation.
   - rewrite H0; assumption.
 Qed.
 
-Lemma Unique_Map_Update : forall A B (P : A -> B -> bool) a b r f,
+Lemma Unique_Map_value_Update : forall A B (P : A -> B -> bool) a b r f,
   (forall x y : A, {x = y} + {x <> y}) ->
   Functional r ->
   Lookup a b r ->
   P a b = true ->
   Unique _ _ P a r ->
-  Same (Map (fun k e => if P k e then f k e else e) r) (Update a (f a b) r).
+  Same (Map_value (fun k e => if P k e then f k e else e) r) (Update a (f a b) r).
 Proof.
   intros.
   split; intros; repeat teardown; subst.
@@ -1102,10 +1102,10 @@ Proof.
   constructor.
 Qed.
 
-Lemma Map_preserves_Finite {C} : forall f `(_ : Finite _ r),
-  Finite _ (@Map A B C f r).
+Lemma Map_value_preserves_Finite {C} : forall f `(_ : Finite _ r),
+  Finite _ (@Map_value A B C f r).
 Proof.
-  unfold Map; intros.
+  unfold Map_value; intros.
   apply Surjection_preserves_Finite
    with (X:=r) (f:=fun p => (fst p, f (fst p) (snd p))); trivial.
   intros ??.
@@ -1183,10 +1183,11 @@ Lemma Modify_preserves_Finite : forall a f `(_ : Finite _ r),
 Proof.
   intros.
   apply Relate_preserves_Finite; trivial; intros.
-  - intuition; subst; tauto.
+  - firstorder eauto; subst; auto;
+    contradiction.
   - destruct (X k a); subst.
-    + exists (a, f e); simpl; intuition.
-    + exists (k, e); simpl; intuition.
+    + exists (a, f e); simpl; firstorder.
+    + exists (k, e); simpl; firstorder.
 Qed.
 
 Lemma Conjunction_preserves_finite_right {U} :
@@ -1246,30 +1247,30 @@ Qed.
 
 End TupleEnsembleFinite.
 
-Hint Resolve Conjunction_preserves_finite_left : sets.
-Hint Resolve Conjunction_preserves_finite_right : sets.
-Hint Resolve Define_preserves_Finite : sets.
-Hint Resolve Empty_preserves_Finite : sets.
-Hint Resolve Filter_preserves_Finite : sets.
-Hint Resolve Finite_Add_Subtract : sets.
-Hint Resolve Insert_preserves_Finite : sets.
-Hint Resolve Map_preserves_Finite : sets.
-Hint Resolve Modify_preserves_Finite : sets.
-Hint Resolve Move_preserves_Finite : sets.
-Hint Resolve Product_Add_left : sets.
-Hint Resolve Product_Add_right : sets.
-Hint Resolve Product_Empty_set_left : sets.
-Hint Resolve Product_Empty_set_right : sets.
-Hint Resolve Product_Singleton_Singleton : sets.
-Hint Resolve Product_preserves_Finite : sets.
-Hint Resolve Relate_Add_preserves_Finite : sets.
-Hint Resolve Relate_preserves_Finite : sets.
-Hint Resolve Remove_preserves_Finite : sets.
-Hint Resolve Setminus_preserves_finite : sets.
-Hint Resolve Single_is_Finite : sets.
-Hint Resolve Surjection_preserves_Finite : sets.
-Hint Resolve Surjective_Add_Subtract : sets.
-Hint Resolve Update_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Conjunction_preserves_finite_left : sets.
+(*#[export]*) Hint Resolve Conjunction_preserves_finite_right : sets.
+(*#[export]*) Hint Resolve Define_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Empty_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Filter_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Finite_Add_Subtract : sets.
+(*#[export]*) Hint Resolve Insert_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Map_value_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Modify_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Move_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Product_Add_left : sets.
+(*#[export]*) Hint Resolve Product_Add_right : sets.
+(*#[export]*) Hint Resolve Product_Empty_set_left : sets.
+(*#[export]*) Hint Resolve Product_Empty_set_right : sets.
+(*#[export]*) Hint Resolve Product_Singleton_Singleton : sets.
+(*#[export]*) Hint Resolve Product_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Relate_Add_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Relate_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Remove_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Setminus_preserves_finite : sets.
+(*#[export]*) Hint Resolve Single_is_Finite : sets.
+(*#[export]*) Hint Resolve Surjection_preserves_Finite : sets.
+(*#[export]*) Hint Resolve Surjective_Add_Subtract : sets.
+(*#[export]*) Hint Resolve Update_preserves_Finite : sets.
 
 Ltac finite_preservation :=
   repeat (
@@ -1280,7 +1281,7 @@ Ltac finite_preservation :=
   | [ |- Finite _ (Remove _ _)     ] => apply Remove_preserves_Finite
   | [ |- Finite _ (Update _ _ _)   ] => apply Update_preserves_Finite
   | [ |- Finite _ (Move _ _ _)     ] => apply Move_preserves_Finite
-  | [ |- Finite _ (Map _ _)        ] => apply Map_preserves_Finite
+  | [ |- Finite _ (Map_value _ _)  ] => apply Map_value_preserves_Finite
   | [ |- Finite _ (Map_set _ _)    ] => apply Map_set_preserves_Finite
   | [ |- Finite _ (Relate _ _)     ] => apply Relate_preserves_Finite
   | [ |- Finite _ (Filter _ _)     ] => apply Filter_preserves_Finite
