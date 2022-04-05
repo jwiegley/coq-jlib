@@ -1,2 +1,10 @@
 -R . Top
+src/Decidable.v
 src/EnsemblesExt.v
+src/FMapExt.v
+src/I2List.v
+src/IList.v
+src/IList2.v
+src/Nomega.v
+src/PartialMap.v
+src/Tactics.v
