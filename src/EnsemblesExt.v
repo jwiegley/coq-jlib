@@ -1,13 +1,16 @@
 Require Import
   Coq.Classes.Morphisms
+  Coq.Relations.Relation_Definitions
   Coq.Program.Program
   Coq.Unicode.Utf8
   Coq.Sets.Finite_sets
-  Coq.Sets.Ensembles.
+  Coq.Sets.Ensembles
+  Coq.Logic.Classical.
 
 Require Coq.Sets.Finite_sets_facts.
 Require Coq.Sets.Powerset_facts.
 Require Coq.Logic.Classical_Prop.
+Require Coq.Lists.List.
 Require Classical_Pred_Type.
 
 Generalizable All Variables.
@@ -31,6 +34,10 @@ Tactic Notation "by" tactic(H) :=
 
 Notation "'IF' c1 'then' c2 'else' c3" := (c1 /\ c2 \/ ~ c1 /\ c3)
   (at level 200, right associativity).
+
+Class EqDec (A : Type) := {
+    eq_dec : ∀ x y : A, {x = y} + {x ≠ y}
+}.
 
 Ltac breakdown :=
   match goal with
@@ -56,11 +63,35 @@ Ltac breakdown :=
   | [ H1 : ?X = true, H2 : ?X = false |- _ ] => rewrite H1 in H2; discriminate
   end.
 
-Infix    "∪"     := (Union _)        (at level 85, right associativity).
-Notation "∅"     := (Empty_set _)    (at level 0, no associativity).
-Notation "p ∈ q" := (In _ q p)       (at level 88, no associativity).
-Notation "p ⊆ q" := (Included _ p q) (at level 89, no associativity).
-Infix    "∩"     := (Intersection _) (at level 80, right associativity).
+Infix    "∪"      := (Union _)        (at level 75, right associativity).
+Notation "∅"      := (Empty_set _)    (at level 0, no associativity).
+Notation "p ⊆ q"  := (Included _ p q) (at level 69, no associativity).
+Infix    "∩"      := (Intersection _) (at level 70, right associativity).
+Notation "x ∷ xs" := (Add _ xs x)     (at level 60, right associativity, only parsing).
+
+Notation "{ e } ∪ s" := (Add _ s e) (at level 75, right associativity, only parsing).
+
+(* Notation "p ∈ q"  := (In _ q p)       (at level 68, no associativity). *)
+(* Notation "p ∉ q"  := (~ In _ q p)     (at level 68, no associativity). *)
+
+Reserved Infix "∈" (at level 68, no associativity).
+Reserved Infix "∉" (at level 68, no associativity).
+
+Class Membership (t : Type → Type) := {
+  is_in {a} : a → t a → Prop
+    where "p ∈ q" := (is_in p q) and "p ∉ q" := (~ is_in p q)
+}.
+
+Infix "∈" := is_in (at level 68, no associativity).
+Notation "e ∉ s" := (~ (e ∈ s)) (at level 68, no associativity).
+
+Global Instance Ensemble_Membership : Membership Ensemble := {|
+  is_in := λ a, flip (Ensembles.In a)
+|}.
+
+Global Instance list_Membership : Membership list := {|
+  is_in := List.In
+|}.
 
 (*#[export]*) Program Instance Same_set_Equivalence {A} : Equivalence (@Same_set A).
 Next Obligation.
@@ -353,21 +384,133 @@ Proof.
   intuition.
 Qed.
 
+Theorem Setminus_Add_in A x s t :
+  x ∈ t → Same_set _ (Setminus A (Add A s x) t) (Setminus A s t).
+Proof.
+  split; repeat intro.
+  - unfold In, Setminus in *.
+    destruct H0.
+    split; auto.
+    inv H0; auto.
+    inv H2.
+    contradiction.
+  - unfold In, Setminus in *.
+    destruct H0.
+    split; auto.
+    now left.
+Qed.
+
+Theorem Setminus_Add_not_in A x s t :
+  x ∉ t → Same_set _ (Setminus A (Add A s x) t) (Add A (Setminus A s t) x).
+Proof.
+  split; repeat intro.
+  - unfold In, Setminus in *.
+    destruct H0.
+    inv H0; auto.
+    + now left.
+    + inv H2.
+      now right.
+  - unfold In, Setminus in *.
+    inv H0.
+    + destruct H1.
+      split; auto.
+      now left.
+    + inv H1.
+      split; auto.
+      now right.
+Qed.
+
+Theorem Finite_Setminus A x y : Finite A x → Finite A (Setminus A x y).
+Proof.
+  intros.
+  induction H.
+  - rewrite Powerset_facts.Seminus_Empty_set_l.
+    now constructor.
+  - destruct (classic (In _ y x)).
+    + now rewrite Setminus_Add_in.
+    + rewrite Setminus_Add_not_in; auto.
+      constructor; auto.
+      intro.
+      destruct H2.
+      contradiction.
+Qed.
+
 Section TupleEnsemble.
 
 Variables A B : Type.
 
 Definition Map := Ensemble (A * B).
 
+Definition FinMap := { M : Map | Finite _ M }.
+
+Definition FinMap_to_Map (M : FinMap) : Map := proj1_sig M.
+Coercion FinMap_to_Map : FinMap >-> Map.
+
+Definition FunMap := { M : list (A * B) | ∀ k v v', (k, v) ∈ M → (k, v') ∈ M → v = v' }.
+
+Definition AList := list (A * B).
+
+Definition FunMap_to_list (M : FunMap) : AList := proj1_sig M.
+Coercion FunMap_to_list : FunMap >-> AList.
+
 Definition Empty : Map := Empty_set _.
+
+Program Definition EmptyF : FinMap := exist _ Empty _.
+Next Obligation. constructor. Qed.
+
+Program Definition EmptyU : FunMap := exist _ nil _.
+Next Obligation. inversion H. Qed.
 
 Definition Single (a : A) (b : B) : Map := Singleton _ (a, b).
 
+Program Definition SingleF (a : A) (b : B) : FinMap := exist _ (Single a b) _.
+Next Obligation. now apply Finite_sets_facts.Singleton_is_finite. Qed.
+
+Program Definition SingleU (a : A) (b : B) : FunMap := exist _ (cons (a, b) nil) _.
+Next Obligation. now inv H; inv H0; inv H; inv H1. Qed.
+
 Definition Lookup (a : A) (b : B) (r : Map) := In _ r (a, b).
 
-Definition Functional (r : Map) :=
-  forall addr blk1, Lookup addr blk1 r ->
-  forall blk2, Lookup addr blk2 r -> blk1 = blk2.
+Program Definition LookupF (a : A) (b : B) (r : FinMap) :
+  In _ r (a, b) ∨ ~ In _ r (a, b).
+Proof.
+  destruct r; simpl in *.
+  unfold flip, In in *.
+  induction f using Finite_ind.
+  - right.
+    intro.
+    now inversion H.
+  - destruct (classic (x = (a, b))).
+    + subst.
+      left.
+      right.
+      now constructor.
+    + destruct IHf; intros.
+      * left.
+        now left.
+      * right.
+        intro.
+        inv H2.
+        ** contradiction.
+        ** inv H3.
+           contradiction.
+Defined.
+
+Program Definition LookupU (a : A) (r : FunMap) : option B.
+Proof.
+  destruct r as [m H].
+  induction m.
+  - exact None.
+  - destruct IHm.
+    + intros.
+      now firstorder.
+    + exact (Some b).
+    + exact None.
+Defined.
+
+Definition Keys (r : Map) : Ensemble A := λ a, ∃ b, In _ r (a, b).
+
+Definition Values (r : Map): Ensemble B := λ b, ∃ a, In _ r (a, b).
 
 Definition Same (x y : Map) : Prop :=
   forall a b, Lookup a b x <-> Lookup a b y.
@@ -414,67 +557,98 @@ Proof.
   intuition.
 Qed.
 
-Definition Insert (a : A) (b : B) (r : Map)
-           (H : forall b' : B, ~ Lookup a b' r) : Map :=
+Definition Insert (a : A) (b : B) (r : Map) : Map :=
   Add _ r (a, b).
+
+Program Definition InsertF (a : A) (b : B) (r : FinMap) : FinMap :=
+  exist _ (Insert a b r) _.
+Next Obligation.
+  destruct r; simpl.
+  unfold Insert, Lookup in *.
+  now apply Finite_sets_facts.Add_preserves_Finite.
+Qed.
 
 Definition Remove (a : A) (r : Map) : Map :=
   Setminus _ r (fun p => fst p = a).
 
-Program Definition Update (a : A) (b : B) (r : Map) :
-  Map := Insert a b (Remove a r) _.
-Next Obligation. firstorder. Qed.
+Program Definition RemoveF (a : A) (r : FinMap) : FinMap :=
+  exist _ (Remove a r) _.
+Next Obligation.
+  unfold Remove.
+  apply Finite_Setminus.
+  now destruct r.
+Qed.
 
-Definition Map_value {C} (f : A -> B -> C) (r : Map) : Ensemble (A * C) :=
-  fun p => exists b : B, Lookup (fst p) b r /\ snd p = f (fst p) b.
+Fixpoint list_remove (k : A) `{EqDec A} (m : list (A * B)) : list (A * B) :=
+  match m with
+  | nil => nil
+  | cons x xs =>
+      match eq_dec k (fst x) with
+      | left _ => list_remove k xs
+      | right _ => cons x (list_remove k xs)
+      end
+  end.
+
+Lemma List_In_remove `{EqDec A} x y m :
+  List.In x (list_remove y m) -> fst x ≠ y ∧ List.In x m.
+Proof.
+  intros.
+  induction m; simpl in *; auto.
+  destruct (eq_dec y (fst a)).
+  - subst.
+    now intuition.
+  - destruct H0.
+    + subst.
+      now split; intuition.
+    + now intuition.
+Qed.
+
+Program Definition RemoveU (a : A) `{EqDec A} (r : FunMap) : FunMap :=
+  exist _ (list_remove a r) _.
+Next Obligation.
+  destruct r as [m H2]; simpl in *.
+  apply H2 with (k:=k); eapply List_In_remove; eauto.
+Qed.
+
+Program Definition Update (a : A) (b : B) (r : Map) : Map :=
+  Insert a b (Remove a r).
+
+Program Definition UpdateF (a : A) (b : B) (r : FinMap) : FinMap :=
+  exist _ (Update a b r) _.
+Next Obligation.
+  unfold Update, Insert.
+  apply Finite_sets_facts.Add_preserves_Finite.
+  unfold Remove.
+  apply Finite_Setminus.
+  now destruct r.
+Qed.
+
+Program Definition UpdateU (a : A) `{EqDec A} (b : B) (r : FunMap) : FunMap :=
+  exist _ (cons (a, b) (list_remove a r)) _.
+Next Obligation.
+  destruct r as [m H2]; simpl in *.
+  destruct H0.
+  - inv H0.
+    destruct H1.
+    + now inv H0.
+    + apply List_In_remove in H0.
+      destruct H0; simpl in H0.
+      contradiction.
+  - destruct H1.
+    + inv H1.
+      apply List_In_remove in H0.
+      destruct H0; simpl in H0.
+      contradiction.
+    + apply List_In_remove in H0.
+      destruct H0; simpl in H0.
+      apply List_In_remove in H1.
+      destruct H1; simpl in H1.
+      now apply H2 with (k:=k).
+Qed.
 
 Definition Relate {C D} (f : A -> B -> C -> D -> Prop) (r : Map) :
   Ensemble (C * D) :=
   fun p => exists k' e', Lookup k' e' r /\ f k' e' (fst p) (snd p).
-
-Lemma Map_value_left_identity : forall r, Same r (Map_value (fun _ x => x) r).
-Proof.
-  unfold Map_value; split; intros.
-    eexists b.
-    intuition.
-  do 2 destruct H.
-  simpl in *.
-  rewrite H0.
-  assumption.
-Qed.
-
-Lemma Map_value_right_identity : forall r, Same (Map_value (fun _ x => x) r) r.
-Proof.
-  unfold Map_value; split; intros.
-    do 2 destruct H.
-    simpl in *.
-    rewrite H0.
-    assumption.
-  eexists b.
-  intuition.
-Qed.
-
-Lemma Map_value_composition : forall f g r,
-  Same (Map_value (fun k e => f k (g k e)) r) (Map_value f (Map_value g r)).
-Proof.
-  unfold Map_value; split; intros.
-    destruct H.
-    destruct H; simpl in *.
-    subst.
-    exists (g a x); simpl in *.
-    split; trivial.
-    exists x; simpl.
-    intuition.
-  destruct H.
-  destruct H; simpl in *.
-  subst.
-  destruct H; simpl in *.
-  exists x0; simpl in *.
-  destruct H.
-  intuition.
-  rewrite <- H0.
-  reflexivity.
-Qed.
 
 Definition Move (a a' : A) (r : Map) : Map :=
   Relate (fun k e k' e' =>
@@ -511,32 +685,34 @@ Lemma Lookup_Single_inv : forall a b c d,
   Lookup a b (Single c d) -> a = c /\ b = d.
 Proof. split; inversion H; reflexivity. Qed.
 
-Lemma Lookup_Insert : forall a b c d r H,
+Lemma Lookup_Insert : forall a b c d r,
   (a = c /\ b = d) \/ (a <> c /\ Lookup a b r)
-    -> Lookup a b (Insert c d r H).
+    -> Lookup a b (Insert c d r).
 Proof.
   intros.
   intuition.
-    rewrite H0, H2.
+    subst.
     right; constructor.
   left.
-  exact H2.
+  exact H1.
 Qed.
 
-Lemma Lookup_Insert_inv : forall a b c d r H,
-  Lookup a b (Insert c d r H)
+(*
+Lemma Lookup_Insert_inv : forall a b c d r,
+  Lookup a b (Insert c d r)
     -> (a = c /\ b = d) \/ (a <> c /\ Lookup a b r).
 Proof.
   intros.
-  inversion H0; clear H0.
+  inversion H; clear H.
     subst.
     right.
     firstorder.
     unfold not; intros; subst.
-    contradiction (H b).
+    contradiction (H0 b).
   inversion H1; clear H1.
   firstorder.
 Qed.
+*)
 
 Lemma Lookup_Remove : forall a b a' r,
   Lookup a b r -> a <> a' -> Lookup a b (Remove a' r).
@@ -590,6 +766,10 @@ Proof.
   firstorder.
 Qed.
 
+Definition Functional (r : Map) :=
+  forall addr blk1, Lookup addr blk1 r ->
+  forall blk2, Lookup addr blk2 r -> blk1 = blk2.
+
 Lemma Lookup_Update_idem : forall a b r,
   Functional r ->
   (forall a a' : A, a = a' \/ a <> a') ->
@@ -630,18 +810,6 @@ Lemma Lookup_Move_inv : forall k e a a' r,
 Proof.
   firstorder;
   simpl in *; subst;
-  firstorder.
-Qed.
-
-Lemma Lookup_Map_value : forall a b f r,
-  (exists b', f a b' = b /\ Lookup a b' r) -> Lookup a b (Map_value f r).
-Proof. firstorder. Qed.
-
-Lemma Lookup_Map_value_inv : forall a b f r,
-  Lookup a b (Map_value f r) -> exists b', f a b' = b /\ Lookup a b' r.
-Proof.
-  intros.
-  inversion H; clear H.
   firstorder.
 Qed.
 
@@ -803,7 +971,6 @@ Arguments Update : default implicits.
 Arguments Modify : default implicits.
 Arguments Move : default implicits.
 Arguments Filter : default implicits.
-Arguments Map_value : default implicits.
 Arguments Relate : default implicits.
 Arguments All : default implicits.
 Arguments Any : default implicits.
@@ -811,8 +978,74 @@ Arguments Define : default implicits.
 Arguments Lookup : default implicits.
 Arguments Same : default implicits.
 Arguments Member : default implicits.
+Arguments Keys : default implicits.
+Arguments Values : default implicits.
 
 Arguments Lookup_Empty : default implicits.
+
+Definition Map_value {A B C} (f : A -> B -> C) (r : Map A B) : Map A C :=
+  fun p => exists b : B, Lookup (fst p) b r /\ snd p = f (fst p) b.
+
+Arguments Map_value : default implicits.
+
+Lemma Map_value_left_identity {A B} (r : Map A B) : Same r (Map_value (fun _ x => x) r).
+Proof.
+  unfold Map_value; split; intros.
+    eexists b.
+    intuition.
+  do 2 destruct H.
+  simpl in *.
+  rewrite H0.
+  assumption.
+Qed.
+
+Lemma Map_value_right_identity {A B} (r : Map A B) : Same (Map_value (fun _ x => x) r) r.
+Proof.
+  unfold Map_value; split; intros.
+    do 2 destruct H.
+    simpl in *.
+    rewrite H0.
+    assumption.
+  eexists b.
+  intuition.
+Qed.
+
+Lemma Map_value_composition {A B C D} (r : Map A B) (g : A -> B -> C) (f : A -> C -> D) :
+  Same (Map_value (fun k e => f k (g k e)) r) (Map_value f (Map_value g r)).
+Proof.
+  unfold Map_value; split; intros.
+    destruct H.
+    destruct H; simpl in *.
+    subst.
+    exists (g a x); simpl in *.
+    split; trivial.
+    exists x; simpl.
+    intuition.
+  destruct H.
+  destruct H; simpl in *.
+  subst.
+  destruct H; simpl in *.
+  exists x0; simpl in *.
+  destruct H.
+  intuition.
+  rewrite <- H0.
+  reflexivity.
+Qed.
+
+Lemma Lookup_Map_value {A B C} a b (f : A -> B -> C) (r : Map A B) :
+  (exists b', f a b' = b /\ Lookup a b' r) -> Lookup a b (Map_value f r).
+Proof. firstorder. Qed.
+
+Lemma Lookup_Map_value_inv {A B C} a b (f : A -> B -> C) (r : Map A B) :
+  Lookup a b (Map_value f r) -> exists b', f a b' = b /\ Lookup a b' r.
+Proof.
+  intros.
+  inversion H; clear H.
+  firstorder.
+Qed.
+
+Notation "s ∖ { e }" := (Remove e s) (at level 75, right associativity).
+Notation "s ∖∖ k" := (RemoveU _ _ k s) (at level 75, right associativity).
 
 Ltac t H :=
   unfold Relate;
@@ -843,7 +1076,7 @@ Ltac teardown :=
   match goal with
   | [ H : Lookup _ _ Empty            |- _ ] => contradiction (Lookup_Empty H)
   | [ H : Lookup _ _ (Single _ _)     |- _ ] => apply Lookup_Single_inv in H
-  | [ H : Lookup _ _ (Insert _ _ _ _) |- _ ] => apply Lookup_Insert_inv in H
+  (* | [ H : Lookup _ _ (Insert _ _ _)   |- _ ] => apply Lookup_Insert_inv in H *)
   | [ H : Lookup _ _ (Remove _ _)     |- _ ] => apply Lookup_Remove_inv in H
   | [ H : Lookup _ _ (Update _ _ _)   |- _ ] => apply Lookup_Update_inv in H
   | [ H : Lookup _ _ (Move _ _ _)     |- _ ] => apply Lookup_Move_inv in H
@@ -857,7 +1090,7 @@ Ltac teardown :=
 
   | [ H : Member _ Empty            |- _ ] => unfold Member in H
   | [ H : Member _ (Single _ _)     |- _ ] => unfold Member in H
-  | [ H : Member _ (Insert _ _ _ _) |- _ ] => unfold Member in H
+  | [ H : Member _ (Insert _ _ _)   |- _ ] => unfold Member in H
   | [ H : Member _ (Remove _ _)     |- _ ] => unfold Member in H
   | [ H : Member _ (Update _ _ _)   |- _ ] => unfold Member in H
   | [ H : Member _ (Move _ _ _)     |- _ ] => unfold Member in H
@@ -871,7 +1104,7 @@ Ltac teardown :=
 
   | [ |- Lookup _ _ Empty            ] => apply Lookup_Empty
   | [ |- Lookup _ _ (Single _ _)     ] => apply Lookup_Single
-  | [ |- Lookup _ _ (Insert _ _ _ _) ] => apply Lookup_Insert
+  | [ |- Lookup _ _ (Insert _ _ _)   ] => apply Lookup_Insert
   | [ |- Lookup _ _ (Remove _ _)     ] => apply Lookup_Remove
   | [ |- Lookup ?A _ (Update ?A _ _) ] => apply Lookup_Update_eq
   | [ H : ?A = ?B  |- Lookup ?A _ (Update ?B _ _) ] => apply Lookup_Update_eq
@@ -926,6 +1159,30 @@ Proof.
   split; intros; repeat teardown.
   right; intuition.
   teardown.
+Qed.
+
+Global Program Instance Keys_Proper A B :
+  Proper (@Same _ _ ==> @Same_set _) (@Keys A B).
+Next Obligation.
+  split; repeat intro; subst; repeat teardown.
+    destruct H0.
+    exists x1.
+    now apply H.
+  destruct H0.
+  exists x1.
+  now apply H.
+Qed.
+
+Global Program Instance Values_Proper A B :
+  Proper (@Same _ _ ==> @Same_set _) (@Values A B).
+Next Obligation.
+  split; repeat intro; subst; repeat teardown.
+    destruct H0.
+    exists x1.
+    now apply H.
+  destruct H0.
+  exists x1.
+  now apply H.
 Qed.
 
 Global Program Instance Remove_Proper A B :
@@ -1013,8 +1270,8 @@ Proof. constructor. Qed.
 Lemma Single_is_Finite : forall a b, Finite _ (@Single A B a b).
 Proof. intros; apply Finite_sets_facts.Singleton_is_finite. Qed.
 
-Lemma Insert_preserves_Finite : forall a b `(_ : Finite _ r) H,
-  Finite _ (@Insert A B a b r H).
+Lemma Insert_preserves_Finite : forall a b `(_ : Finite _ r),
+  Finite _ (@Insert A B a b r).
 Proof. intros; apply Finite_sets_facts.Add_preserves_Finite; assumption. Qed.
 
 Lemma Setminus_preserves_finite {U} :
@@ -1275,18 +1532,56 @@ End TupleEnsembleFinite.
 Ltac finite_preservation :=
   repeat (
   match goal with
-  | [ |- Finite _ Empty            ] => apply Empty_preserves_Finite
-  | [ |- Finite _ (Single _ _)     ] => apply Single_is_Finite
-  | [ |- Finite _ (Insert _ _ _ _) ] => apply Insert_preserves_Finite
-  | [ |- Finite _ (Remove _ _)     ] => apply Remove_preserves_Finite
-  | [ |- Finite _ (Update _ _ _)   ] => apply Update_preserves_Finite
-  | [ |- Finite _ (Move _ _ _)     ] => apply Move_preserves_Finite
-  | [ |- Finite _ (Map_value _ _)  ] => apply Map_value_preserves_Finite
-  | [ |- Finite _ (Map_set _ _)    ] => apply Map_set_preserves_Finite
-  | [ |- Finite _ (Relate _ _)     ] => apply Relate_preserves_Finite
-  | [ |- Finite _ (Filter _ _)     ] => apply Filter_preserves_Finite
-  | [ |- Finite _ (Define _ _ _)   ] => apply Define_preserves_Finite
-  | [ |- Finite _ (Modify _ _ _)   ] => apply Modify_preserves_Finite
-  | [ |- Finite _ (Union _ _ _)    ] => apply Finite_sets_facts.Union_preserves_Finite
-  | [ |- Finite _ (Add _ _ _)      ] => apply Finite_sets_facts.Add_preserves_Finite
+  | [ |- Finite _ Empty           ] => apply Empty_preserves_Finite
+  | [ |- Finite _ (Single _ _)    ] => apply Single_is_Finite
+  | [ |- Finite _ (Insert _ _ _)  ] => apply Insert_preserves_Finite
+  | [ |- Finite _ (Remove _ _)    ] => apply Remove_preserves_Finite
+  | [ |- Finite _ (Update _ _ _)  ] => apply Update_preserves_Finite
+  | [ |- Finite _ (Move _ _ _)    ] => apply Move_preserves_Finite
+  | [ |- Finite _ (Map_value _ _) ] => apply Map_value_preserves_Finite
+  | [ |- Finite _ (Map_set _ _)   ] => apply Map_set_preserves_Finite
+  | [ |- Finite _ (Relate _ _)    ] => apply Relate_preserves_Finite
+  | [ |- Finite _ (Filter _ _)    ] => apply Filter_preserves_Finite
+  | [ |- Finite _ (Define _ _ _)  ] => apply Define_preserves_Finite
+  | [ |- Finite _ (Modify _ _ _)  ] => apply Modify_preserves_Finite
+  | [ |- Finite _ (Union _ _ _)   ] => apply Finite_sets_facts.Union_preserves_Finite
+  | [ |- Finite _ (Add _ _ _)     ] => apply Finite_sets_facts.Add_preserves_Finite
   end; auto).
+
+Reserved Notation "k ↦ v 'in' m" (at level 68, no associativity).
+
+Class MapMembership (t : Type → Type → Type) (k : Type) := {
+  has_elem {a} : k → a → t k a → Prop;
+  insert_elem {a} : k → a → t k a → t k a
+}.
+
+Notation "k ↦ v 'in' m" := (has_elem k v m) (at level 68, no associativity).
+
+Notation "k ↦ v 'not' 'in' m" := (~ has_elem k v m) (at level 68, no associativity).
+
+Notation "m 'having' k ∷= v" := (insert_elem k v m) (at level 68, no associativity).
+
+Global Instance Ensemble_MapMembership {k} : MapMembership (λ k v, Ensemble (k * v)) k := {|
+  has_elem := λ {v} i x, flip (Ensembles.In (k * v)) (i, x);
+  insert_elem := λ {v} i x m, Ensembles.Add _ m (i, x)
+|}.
+
+Global Instance list_MapMembership {k} : MapMembership (λ k v, list (k * v)) k := {|
+  has_elem := λ {v} i x, List.In (i, x);
+  insert_elem := λ {v} i x m, cons (i, x) m
+|}.
+
+Global Instance Map_MapMembership {k} : MapMembership Map k := {|
+  has_elem := λ {v}, @Lookup k v;
+  insert_elem := λ {v} i x m, Update i x m
+|}.
+
+Global Instance FinMap_MapMembership {k} : MapMembership FinMap k := {|
+  has_elem := λ {v} i x (m : FinMap k v), @Lookup k v i x m;
+  insert_elem := λ {v} i x m, UpdateF _ _ i x m
+|}.
+
+Global Instance FunMap_MapMembership {k} `{EqDec k} : MapMembership FunMap k := {|
+  has_elem := λ {v} i x (m : FunMap k v), @LookupU k v i m = Some x;
+  insert_elem := λ {v} i x m, UpdateU _ _ i x m
+|}.
