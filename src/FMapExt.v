@@ -459,23 +459,28 @@ Lemma for_all_add_true : forall (m : M.t elt) k e,
 Proof.
   unfold P.for_all.
   remember (fun _ _ _ => _) as f.
-  assert (Proper (E.eq ==> eq ==> eq ==> eq) f).
+  assert (Proper (E.eq ==> eq ==> eq ==> eq) f). {
     relational.
     rewrite H; reflexivity.
-  assert (P.transpose_neqkey eq f).
+  }
+  assert (P.transpose_neqkey eq f). {
     rewrite Heqf; intros ??????.
     destruct (P k e), (P k' e'); auto.
-  assert (Proper (E.eq ==> eq ==> eq --> flip eq) f).
+  }
+  assert (Proper (E.eq ==> eq ==> eq --> flip eq) f). {
     unfold flip; relational.
     rewrite H1; reflexivity.
-  assert (P.transpose_neqkey (flip eq) f).
+  }
+  assert (P.transpose_neqkey (flip eq) f). {
     unfold flip; rewrite Heqf; intros ??????.
     destruct (P k e), (P k' e'); auto.
+  }
   split; intros.
     rewrite P.fold_Add with (k:=k) (e:=e) (m1:=m) in H4; eauto.
       rewrite Heqf in *.
       destruct (P k e); firstorder.
-    constructor.
+    discriminate.
+  constructor.
   rewrite P.fold_Add with (k:=k) (e:=e) (m1:=m); eauto.
     rewrite Heqf in *.
     destruct (P k e); firstorder.
