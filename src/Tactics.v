@@ -11,7 +11,7 @@ Tactic Notation "by" tactic(H) :=
 
 Ltac breakdown :=
   match goal with
-  | [ H : IF _ then _ else _ |- _ ] => destruct H
+  (* | [ H : IF _ then _ else _ |- _ ] => destruct H *)
   | [ H : _ /\ _             |- _ ] => destruct H
   | [ H : _ \/ _             |- _ ] => destruct H
   | [ H : _ * _              |- _ ] => destruct H
