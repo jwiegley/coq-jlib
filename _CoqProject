@@ -8,3 +8,5 @@ src/IList2.v
 src/Nomega.v
 src/PartialMap.v
 src/Tactics.v
+src/Same_set.v
+src/Stream.v
