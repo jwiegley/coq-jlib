@@ -8,7 +8,6 @@ jobs:
     strategy:
       matrix:
         image:
-          - 'coqorg/coq:dev'
           - 'coqorg/coq:8.15'
           - 'coqorg/coq:8.14'
           - 'coqorg/coq:8.13'
@@ -17,7 +16,7 @@ jobs:
           - 'coqorg/coq:8.10'
       fail-fast: false
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: coq-community/docker-coq-action@v1
         with:
           opam_file: 'coq-jlib.opam'
